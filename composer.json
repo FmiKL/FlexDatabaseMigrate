@@ -1,0 +1,9 @@
+{
+    "name": "fmikl/flexdatabasemigrate",
+    "description": "A flexible database migration package.",
+    "autoload": {
+        "psr-4": {
+            "FlexDatabaseMigrate\\": "src/"
+        }
+    }
+}
