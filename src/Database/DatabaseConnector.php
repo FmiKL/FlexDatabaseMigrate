@@ -19,4 +19,9 @@ class DatabaseConnector {
     {
         return $this->connection;
     }
+
+    public function escapeString(string $value): string
+    {
+        return $this->connection->real_escape_string($value);
+    }
 }
