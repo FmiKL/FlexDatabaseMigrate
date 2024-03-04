@@ -13,6 +13,41 @@ class DataMigrator {
         private string $keyColumn
     ) {}
 
+    public function updateColumn(string $sourceColumn, string $destinationColumn): void
+    {
+        list($sourceTable, $sourceColumnName) = explode('.', $sourceColumn);
+        list($destinationTable, $destinationColumnName) = explode('.', $destinationColumn);
+
+        $query = "SELECT $this->keyColumn, $sourceColumnName FROM $sourceTable";
+        $sourceExecutor = new QueryExecutor($this->sourceDb->getConnection());
+        $sourceResult = $sourceExecutor->execute($query);
+
+        if ($sourceResult === false) {
+            Logger::log("Failed to fetch data from source table $sourceTable for column update.");
+            return;
+        }
+
+        $totalAffectedRows = 0;
+        $hasError = false;
+
+        while ($row = $sourceResult->fetch_assoc()) {
+            $keyValue = $row[$this->keyColumn];
+            $columnValue = $row[$sourceColumnName];
+            $updateQuery = "UPDATE $destinationTable SET $destinationColumnName = '" . $this->destinationDb->getConnection()->escape_string($columnValue) . "' WHERE $this->keyColumn = '" . $this->destinationDb->getConnection()->escape_string($keyValue) . "'";
+            $destinationExecutor = new QueryExecutor($this->destinationDb->getConnection());
+            if ($destinationExecutor->execute($updateQuery)) {
+                $totalAffectedRows += $this->destinationDb->getConnection()->affected_rows;
+            } else {
+                $hasError = true;
+                Logger::log("Failed to update $destinationColumnName in $destinationTable for key $keyValue.");
+            }
+        }
+
+        if (!$hasError) {
+            Logger::log("Update operation completed for $destinationTable.$destinationColumnName. Total rows affected: $totalAffectedRows.");
+        }
+    }
+
     public function migrateData(array $columnMapping): void
     {
         $sourceTableColumns = array_keys($columnMapping);
